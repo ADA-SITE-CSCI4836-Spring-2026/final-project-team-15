@@ -39,6 +39,7 @@ public class FpsCamera : MonoBehaviour
     private Quaternion _localRotation;
     private float _yaw;
     private float _pitch;
+    private bool _hadValidLockLastFrame;
 
     private void Start()
     {
@@ -68,8 +69,14 @@ public class FpsCamera : MonoBehaviour
         bool moving = Mathf.Abs(Input.GetAxisRaw("Horizontal")) > 0.01f
                    || Mathf.Abs(Input.GetAxisRaw("Vertical"))   > 0.01f;
 
-        if (!moving && Cursor.lockState == CursorLockMode.Locked)
+        bool isLocked = Cursor.lockState == CursorLockMode.Locked;
+
+        if (!moving && isLocked && _hadValidLockLastFrame)
         {
+            // Only read mouse if the cursor was already locked LAST frame too.
+            // This skips the first frame after locking, where Unity's Mouse Y/X
+            // delta reflects the cursor jumping to the screen center and would
+            // otherwise spike the pitch.
             _yaw   += Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
             _pitch -= Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
             _yaw    = Mathf.Clamp(_yaw,   -maxYaw,  maxYaw);
@@ -81,6 +88,8 @@ public class FpsCamera : MonoBehaviour
             _yaw   = Mathf.Lerp(_yaw,   0f, t);
             _pitch = Mathf.Lerp(_pitch, 0f, t);
         }
+
+        _hadValidLockLastFrame = isLocked;
 
         // Position: stay at the captured local-space offset to player.
         transform.position = player.TransformPoint(_localOffset);

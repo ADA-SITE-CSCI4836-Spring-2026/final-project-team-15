@@ -53,9 +53,11 @@ public class PlayerController : MonoBehaviour
         if (Mathf.Abs(h) > 0.01f)
             transform.Rotate(Vector3.up, h * turnSpeed * Time.deltaTime, Space.World);
 
-        // W/S walks along the player's current forward.
+        // W/S walks along the player's visual forward. The character mesh is
+        // imported facing -transform.forward (Y=180), so we negate v here so that
+        // W = visually forward, S = visually backward.
         float speed = moveSpeed * (sprint ? sprintMultiplier : 1f);
-        Vector3 horizontalMove = transform.forward * v * speed;
+        Vector3 horizontalMove = -transform.forward * v * speed;
 
         if (_cc.isGrounded)
         {
