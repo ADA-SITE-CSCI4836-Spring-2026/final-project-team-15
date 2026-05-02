@@ -1,18 +1,14 @@
 using UnityEngine;
 
 /// <summary>
-/// Camera-relative WASD movement. Works with any camera (Cinemachine third-person,
-/// fixed top-down, first-person) because it derives forward/right from the camera.
+/// Tank-style first-person controls.
+///   W / S  → walk forward / backward along the player's facing direction.
+///   A / D  → turn the player body left / right in place.
+///   Shift  → sprint.
+///   Space  → jump.
 ///
-/// SETUP:
-///   1. Add a CharacterController component (auto-required).
-///   2. Tag the GameObject "Player".
-///   3. Drag your main camera into the cameraTransform slot, or leave empty
-///      and it'll auto-find Camera.main.
-///   4. Add a child mesh — the controller rotates the root toward movement.
-///
-/// Uses Unity's legacy Input axes ("Horizontal", "Vertical", "Jump"), which work
-/// out of the box with no setup. Swap to the new Input System later if needed.
+/// The mouse does NOT rotate the player body. The FpsCamera script handles
+/// stationary peek-look and recenters when the player moves.
 /// </summary>
 [RequireComponent(typeof(CharacterController))]
 public class PlayerController : MonoBehaviour
@@ -20,18 +16,13 @@ public class PlayerController : MonoBehaviour
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private float sprintMultiplier = 1.6f;
-    [SerializeField] private float rotationSpeed = 12f;
-    [Tooltip("If true, the character rotates to face movement direction. Disable for top-down or strafing controls.")]
-    [SerializeField] private bool rotateToMovement = true;
+    [Tooltip("Body turn rate from A/D in degrees per second.")]
+    [SerializeField] private float turnSpeed = 120f;
 
     [Header("Physics")]
     [SerializeField] private float gravity = -20f;
     [SerializeField] private float jumpHeight = 1.4f;
     [SerializeField] private bool allowJump = true;
-
-    [Header("References")]
-    [Tooltip("The camera used to derive movement direction. Auto-assigned to Camera.main if empty.")]
-    [SerializeField] private Transform cameraTransform;
 
     private CharacterController _cc;
     private Vector3 _velocity;
@@ -43,49 +34,32 @@ public class PlayerController : MonoBehaviour
     private void Awake()
     {
         _cc = GetComponent<CharacterController>();
-        if (cameraTransform == null && Camera.main != null)
-            cameraTransform = Camera.main.transform;
     }
 
     private void Update()
     {
         if (!CanMove)
         {
-            // Still apply gravity so the character doesn't hover when frozen.
             ApplyGravityOnly();
             return;
         }
 
-        // ── Read input ────────────────────────────────────────────
         float h = Input.GetAxisRaw("Horizontal");
         float v = Input.GetAxisRaw("Vertical");
         bool sprint = Input.GetKey(KeyCode.LeftShift);
-        bool jump = allowJump && Input.GetButtonDown("Jump");
+        bool jump   = allowJump && Input.GetButtonDown("Jump");
 
-        // ── Camera-relative movement vector ───────────────────────
-        Vector3 forward = cameraTransform != null ? cameraTransform.forward : Vector3.forward;
-        Vector3 right   = cameraTransform != null ? cameraTransform.right   : Vector3.right;
-        forward.y = 0f; right.y = 0f;
-        forward.Normalize(); right.Normalize();
+        // A/D rotates the body in world-Y so the camera (child) follows.
+        if (Mathf.Abs(h) > 0.01f)
+            transform.Rotate(Vector3.up, h * turnSpeed * Time.deltaTime, Space.World);
 
-        Vector3 input = forward * v + right * h;
-        if (input.sqrMagnitude > 1f) input.Normalize();
-
+        // W/S walks along the player's current forward.
         float speed = moveSpeed * (sprint ? sprintMultiplier : 1f);
-        Vector3 horizontalMove = input * speed;
+        Vector3 horizontalMove = transform.forward * v * speed;
 
-        // ── Rotate toward movement ────────────────────────────────
-        if (rotateToMovement && input.sqrMagnitude > 0.01f)
-        {
-            Quaternion target = Quaternion.LookRotation(input);
-            transform.rotation = Quaternion.Slerp(
-                transform.rotation, target, rotationSpeed * Time.deltaTime);
-        }
-
-        // ── Gravity & jump ────────────────────────────────────────
         if (_cc.isGrounded)
         {
-            _velocity.y = -1f; // small downward to keep grounded flag true
+            _velocity.y = -1f;
             if (jump) _velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
         }
         else
@@ -93,7 +67,6 @@ public class PlayerController : MonoBehaviour
             _velocity.y += gravity * Time.deltaTime;
         }
 
-        // ── Apply ─────────────────────────────────────────────────
         Vector3 move = horizontalMove + Vector3.up * _velocity.y;
         _cc.Move(move * Time.deltaTime);
     }
