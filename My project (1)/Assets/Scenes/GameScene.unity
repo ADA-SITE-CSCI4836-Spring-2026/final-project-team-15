@@ -361,7 +361,11 @@ PrefabInstance:
       value: WinterEnv
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 5174389741171811045, guid: 923567816a72f1c46bbfb1af9065a64e, type: 3}
+    - {fileID: -8774935732001894479, guid: 923567816a72f1c46bbfb1af9065a64e, type: 3}
+    - {fileID: 8919900036740220753, guid: 923567816a72f1c46bbfb1af9065a64e, type: 3}
+    - {fileID: 5205670971774184104, guid: 923567816a72f1c46bbfb1af9065a64e, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 923567816a72f1c46bbfb1af9065a64e, type: 3}
