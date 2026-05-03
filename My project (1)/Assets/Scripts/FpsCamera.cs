@@ -60,7 +60,7 @@ public class FpsCamera : MonoBehaviour
     {
         if (player == null) return;
 
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (Input.GetKeyDown(KeyCode.Escape) && !PauseMenuInput.WasPauseInputHandledThisFrame)
         {
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
